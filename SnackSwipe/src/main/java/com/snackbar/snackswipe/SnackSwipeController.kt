@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
@@ -12,10 +13,32 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class SnackSwipeController internal constructor() {
-    private val _snackBarEvents = MutableStateFlow<SnackSwipeState?>(null)
-    internal val snackBarEvents: StateFlow<SnackSwipeState?> = _snackBarEvents.asStateFlow()
+@Composable
+fun rememberSnackSwipeHostState(): SnackSwipeHostState = remember { SnackSwipeHostState() }
 
+@Stable
+class SnackSwipeHostState internal constructor() {
+    private val _state = MutableStateFlow<SnackSwipeState>(SnackSwipeState.Hidden)
+    internal val state: StateFlow<SnackSwipeState> = _state.asStateFlow()
+
+    internal fun show(data: SnackSwipeData) {
+        when (data.behavior.policy) {
+            SnackPolicy.Replace -> _state.value = SnackSwipeState.Visible(data)
+            SnackPolicy.Ignore -> if (_state.value is SnackSwipeState.Hidden) {
+                _state.value = SnackSwipeState.Visible(data)
+            }
+            SnackPolicy.Enqueue -> _state.value = SnackSwipeState.Visible(data)
+        }
+    }
+
+    fun dismissCurrent() {
+        _state.value = SnackSwipeState.Hidden
+    }
+}
+
+class SnackSwipeController internal constructor(
+    private val hostState: SnackSwipeHostState
+) {
     fun show(
         messageText: @Composable () -> Unit,
         icon: (@Composable (() -> Unit))? = null,
@@ -26,31 +49,27 @@ class SnackSwipeController internal constructor() {
         shape: Shape = RoundedCornerShape(12.dp),
         elevation: Dp = 6.dp,
         innerPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-        outerPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
+        outerPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+        behavior: SnackBehavior = SnackBehavior(durationMillis = durationMillis)
     ) {
-        if (_snackBarEvents.value != null) return
-        _snackBarEvents.value = SnackSwipeState.Open(
+        hostState.show(
             SnackSwipeData(
                 messageText = messageText,
                 icon = icon,
                 customAction = customAction,
                 dismissAction = dismissAction,
                 backgroundColor = backgroundColor,
-                durationMillis = durationMillis,
                 shape = shape,
                 elevation = elevation,
                 innerPadding = innerPadding,
-                outerPadding = outerPadding
+                outerPadding = outerPadding,
+                behavior = behavior
             )
         )
     }
 
     fun close() {
-        _snackBarEvents.value = SnackSwipeState.Close
-    }
-
-    fun notifyHidden() {
-        _snackBarEvents.value = null
+        hostState.dismissCurrent()
     }
 }
 
@@ -61,9 +80,9 @@ internal data class SnackSwipeData(
     val customAction: (@Composable (() -> Unit))?,
     val dismissAction: (@Composable (() -> Unit))?,
     val backgroundColor: Color,
-    val durationMillis: Long,
     val shape: Shape,
     val elevation: Dp,
     val innerPadding: PaddingValues,
-    val outerPadding: PaddingValues
+    val outerPadding: PaddingValues,
+    val behavior: SnackBehavior
 )
