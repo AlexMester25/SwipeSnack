@@ -17,12 +17,13 @@ fun SnackSwipeBox(
     modifier: Modifier = Modifier,
     content: @Composable (SnackSwipeController) -> Unit
 ) {
-    val snackSwipeController = remember { SnackSwipeController() }
+    val hostState = rememberSnackSwipeHostState()
+    val snackSwipeController = remember(hostState) { SnackSwipeController(hostState) }
 
     Box(modifier = modifier) {
         content(snackSwipeController)
         SnackSwipeHost(
-            controller = snackSwipeController,
+            hostState = hostState,
             modifier = Modifier.align(Alignment.TopCenter)
         )
     }
@@ -38,7 +39,8 @@ fun SnackSwipeController.showSnackSwipe(
     shape: Shape = RoundedCornerShape(12.dp),
     elevation: Dp = 6.dp,
     innerPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-    outerPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
+    outerPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+    behavior: SnackBehavior = SnackBehavior(durationMillis = durationMillis)
 ) {
     show(
         messageText = messageText,
@@ -50,6 +52,7 @@ fun SnackSwipeController.showSnackSwipe(
         shape = shape,
         elevation = elevation,
         innerPadding = innerPadding,
-        outerPadding = outerPadding
+        outerPadding = outerPadding,
+        behavior = behavior
     )
 }
