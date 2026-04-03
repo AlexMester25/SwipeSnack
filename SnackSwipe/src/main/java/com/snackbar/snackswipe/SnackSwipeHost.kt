@@ -2,12 +2,9 @@ package com.snackbar.snackswipe
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitHorizontalDragOrCancellation
@@ -45,69 +42,45 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.let
 import kotlin.math.abs
-
-
-private const val DISMISS_ANIMATION_DELAY = 200
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun SnackSwipeHost(
-    controller: SnackSwipeController,
+fun SnackSwipeHost(
+    hostState: SnackSwipeHostState,
     modifier: Modifier = Modifier
 ) {
-    val snackBarEvents by controller.snackBarEvents.collectAsState()
-    var animationVisible by remember { mutableStateOf(false) }
-    var snackBarData by remember { mutableStateOf<SnackSwipeData?>(null) }
+    val state by hostState.state.collectAsState()
+    val visibleData = (state as? SnackSwipeState.Visible)?.data
     var isDismissingBySwipe by remember { mutableStateOf(false) }
 
-    LaunchedEffect(snackBarEvents) {
-        when (val event = snackBarEvents) {
-            is SnackSwipeState.Open -> {
-                snackBarData = event.data
-                animationVisible = true
-                isDismissingBySwipe = false
-                delay(event.data.durationMillis)
-                if (!isDismissingBySwipe) {
-                    controller.close()
-                }
-            }
-
-            is SnackSwipeState.Close -> {
-                animationVisible = false
-                if (isDismissingBySwipe) {
-                    controller.notifyHidden()
-                } else {
-                    delay(DISMISS_ANIMATION_DELAY.toLong())
-                    controller.notifyHidden()
-                }
-            }
-
-            null -> {}
+    LaunchedEffect(visibleData) {
+        if (visibleData != null) {
+            isDismissingBySwipe = false
+            delay(visibleData.behavior.durationMillis)
+            if (!isDismissingBySwipe) hostState.dismissCurrent()
         }
     }
+
     val exitAnim: ExitTransition =
-        if (!isDismissingBySwipe) slideOutVertically(
-            animationSpec = spring(),
-            targetOffsetY = { -it }) + fadeOut()
-        else ExitTransition.None
+        if (!isDismissingBySwipe) visibleData?.behavior?.animation?.exit ?: ExitTransition.None
+        else visibleData?.behavior?.animation?.swipeDismissExit ?: ExitTransition.None
 
     AnimatedVisibility(
-        visible = animationVisible,
-        enter = slideInVertically(animationSpec = spring(), initialOffsetY = { -it }) + fadeIn(),
+        visible = visibleData != null,
+        enter = visibleData?.behavior?.animation?.enter ?: EnterTransition.None,
         exit = exitAnim,
         modifier = modifier.fillMaxWidth()
     ) {
-        snackBarData?.let { snackbarData ->
+        visibleData?.let { snackbarData ->
             val scope = rememberCoroutineScope()
             val offsetX = remember { Animatable(0f) }
             val offsetY = remember { Animatable(0f) }
             var size by remember { mutableStateOf(IntSize.Zero) }
             val density = LocalDensity.current
 
-            val thresholdX = (size.width * 0.05).toFloat()
-            val thresholdY = (size.height * 0.05).toFloat()
+            val thresholdX = (size.width * snackbarData.behavior.swipe.thresholdFraction).toFloat()
+            val thresholdY = (size.height * snackbarData.behavior.swipe.thresholdFraction).toFloat()
 
             val paddingHorizontalPx = with(density) {
                 snackbarData.outerPadding.calculateLeftPadding(LayoutDirection.Ltr).toPx()
@@ -127,7 +100,8 @@ internal fun SnackSwipeHost(
                             offsetY.value.toInt()
                         )
                     }
-                    .pointerInput(Unit) {
+                    .pointerInput(snackbarData.behavior.swipe) {
+                        if (!snackbarData.behavior.swipe.enabled) return@pointerInput
                         coroutineScope {
                             while (true) {
                                 awaitPointerEventScope {
@@ -142,9 +116,7 @@ internal fun SnackSwipeHost(
 
                                     if (drag != null) {
                                         val isVertical = abs(overSlop.y) > abs(overSlop.x)
-                                        if (isVertical && overSlop.y >= 0) {
-                                            return@awaitPointerEventScope
-                                        }
+                                        if (isVertical && overSlop.y >= 0) return@awaitPointerEventScope
 
                                         scope.launch {
                                             if (isVertical) {
@@ -157,7 +129,6 @@ internal fun SnackSwipeHost(
                                         drag.consume()
 
                                         var canceled = false
-
                                         while (!canceled) {
                                             val next =
                                                 if (isVertical) awaitVerticalDragOrCancellation(drag.id)
@@ -179,49 +150,37 @@ internal fun SnackSwipeHost(
                                             }
                                         }
 
-                                        val absX = abs(offsetX.value)
-                                        val absY = abs(offsetY.value)
-                                        val dismissDirection = when {
-                                            absY > thresholdY && offsetY.value < 0 -> "up"
-                                            absX > thresholdX -> if (offsetX.value > 0) "right" else "left"
-                                            else -> null
-                                        }
+                                        val dismissDirection = resolveDismissDirection(
+                                            offsetX = offsetX.value,
+                                            offsetY = offsetY.value,
+                                            thresholdX = thresholdX,
+                                            thresholdY = thresholdY,
+                                            allowedDirections = snackbarData.behavior.swipe.allowedDirections
+                                        )
+
                                         if (dismissDirection != null) {
                                             val targetX = when (dismissDirection) {
-                                                "left" -> -(size.width.toFloat() + paddingHorizontalPx * 2)
-                                                "right" -> size.width.toFloat() + paddingHorizontalPx * 2
-                                                else -> 0f
+                                                SwipeDirection.Left -> -(size.width.toFloat() + paddingHorizontalPx * 2)
+                                                SwipeDirection.Right -> size.width.toFloat() + paddingHorizontalPx * 2
+                                                SwipeDirection.Up -> 0f
                                             }
                                             val targetY =
-                                                if (dismissDirection == "up") -(size.height.toFloat() + paddingVerticalPx * 2)
-                                                else 0f
+                                                if (dismissDirection == SwipeDirection.Up) {
+                                                    -(size.height.toFloat() + paddingVerticalPx * 2)
+                                                } else 0f
 
                                             isDismissingBySwipe = true
 
                                             scope.launch {
                                                 coroutineScope {
-                                                    launch {
-                                                        offsetX.animateTo(
-                                                            targetX,
-                                                            animationSpec = spring()
-                                                        )
-                                                    }
-                                                    launch {
-                                                        offsetY.animateTo(
-                                                            targetY,
-                                                            animationSpec = spring()
-                                                        )
-                                                    }
+                                                    launch { offsetX.animateTo(targetX, animationSpec = spring()) }
+                                                    launch { offsetY.animateTo(targetY, animationSpec = spring()) }
                                                 }
-                                                controller.close()
+                                                hostState.dismissCurrent()
                                             }
                                         } else {
-                                            scope.launch {
-                                                offsetX.animateTo(0f, animationSpec = spring())
-                                            }
-                                            scope.launch {
-                                                offsetY.animateTo(0f, animationSpec = spring())
-                                            }
+                                            scope.launch { offsetX.animateTo(0f, animationSpec = spring()) }
+                                            scope.launch { offsetY.animateTo(0f, animationSpec = spring()) }
                                         }
                                     }
                                 }
@@ -263,4 +222,20 @@ internal fun SnackSwipeHost(
     }
 }
 
+private fun resolveDismissDirection(
+    offsetX: Float,
+    offsetY: Float,
+    thresholdX: Float,
+    thresholdY: Float,
+    allowedDirections: Set<SwipeDirection>
+): SwipeDirection? {
+    val absX = abs(offsetX)
+    val absY = abs(offsetY)
 
+    return when {
+        absY > thresholdY && offsetY < 0 && SwipeDirection.Up in allowedDirections -> SwipeDirection.Up
+        absX > thresholdX && offsetX > 0 && SwipeDirection.Right in allowedDirections -> SwipeDirection.Right
+        absX > thresholdX && offsetX < 0 && SwipeDirection.Left in allowedDirections -> SwipeDirection.Left
+        else -> null
+    }
+}

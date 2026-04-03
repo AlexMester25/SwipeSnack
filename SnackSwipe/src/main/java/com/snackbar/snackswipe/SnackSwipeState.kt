@@ -1,6 +1,6 @@
 package com.snackbar.snackswipe
 
-internal sealed class SnackSwipeState {
-    data class Open(val data: SnackSwipeData) : SnackSwipeState()
-    object Close : SnackSwipeState()
+internal sealed interface SnackSwipeState {
+    data object Hidden : SnackSwipeState
+    data class Visible(val data: SnackSwipeData) : SnackSwipeState
 }
