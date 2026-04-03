@@ -74,7 +74,7 @@ class SnackSwipeController internal constructor(
 }
 
 @Stable
-internal data class SnackSwipeData(
+data class SnackSwipeData(
     val messageText: @Composable () -> Unit,
     val icon: (@Composable (() -> Unit))?,
     val customAction: (@Composable (() -> Unit))?,

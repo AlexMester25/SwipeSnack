@@ -2,8 +2,8 @@
  <h1 align="center">◀ SwipeSnack ▶</h1>
 
 <p align="center">
-  <a href="https://jitpack.io/#senseiiii12/SwipeSnack">
-    <img src="https://jitpack.io/v/senseiiii12/SwipeSnack.svg" />
+  <a href="https://jitpack.io/#AlexMester25/SwipeSnack">
+    <img src="https://jitpack.io/v/AlexMester25/SwipeSnack.svg" />
   </a>
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" />
   <img src="https://img.shields.io/badge/Kotlin-1.9.24-blue.svg" />
@@ -17,6 +17,7 @@
 ✔ Auto-disappear on timer<br>
 ✔ Convenient API via `SnackSwipeBox`.<br>
 #
+
  <p align="center">
   <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDFmYnU0YnRyZTNtandqemt3cHczYXlyaWl4OGVmaHBkZ2FoYTF0ZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/f9Ti2yEFGCumoXJLhq/giphy.gif"/>
 </p> 
