@@ -21,7 +21,7 @@ class SnackSwipeHostState internal constructor() {
     private val _state = MutableStateFlow<SnackSwipeState>(SnackSwipeState.Hidden)
     internal val state: StateFlow<SnackSwipeState> = _state.asStateFlow()
 
-    fun show(data: SnackSwipeData) {
+    internal fun show(data: SnackSwipeData) {
         when (data.behavior.policy) {
             SnackPolicy.Replace -> _state.value = SnackSwipeState.Visible(data)
             SnackPolicy.Ignore -> if (_state.value is SnackSwipeState.Hidden) {
