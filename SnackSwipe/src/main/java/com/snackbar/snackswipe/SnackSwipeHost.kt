@@ -52,10 +52,12 @@ fun SnackSwipeHost(
 ) {
     val state by hostState.state.collectAsState()
     val visibleData = (state as? SnackSwipeState.Visible)?.data
+    var currentData by remember { mutableStateOf<SnackSwipeData?>(null) }
     var isDismissingBySwipe by remember { mutableStateOf(false) }
 
     LaunchedEffect(visibleData) {
         if (visibleData != null) {
+            currentData = visibleData
             isDismissingBySwipe = false
             delay(visibleData.behavior.durationMillis)
             if (!isDismissingBySwipe) hostState.dismissCurrent()
@@ -63,16 +65,16 @@ fun SnackSwipeHost(
     }
 
     val exitAnim: ExitTransition =
-        if (!isDismissingBySwipe) visibleData?.behavior?.animation?.exit ?: ExitTransition.None
-        else visibleData?.behavior?.animation?.swipeDismissExit ?: ExitTransition.None
+        if (!isDismissingBySwipe) currentData?.behavior?.animation?.exit ?: ExitTransition.None
+        else currentData?.behavior?.animation?.swipeDismissExit ?: ExitTransition.None
 
     AnimatedVisibility(
         visible = visibleData != null,
-        enter = visibleData?.behavior?.animation?.enter ?: EnterTransition.None,
+        enter = currentData?.behavior?.animation?.enter ?: EnterTransition.None,
         exit = exitAnim,
         modifier = modifier.fillMaxWidth()
     ) {
-        visibleData?.let { snackbarData ->
+        currentData?.let { snackbarData ->
             val scope = rememberCoroutineScope()
             val offsetX = remember { Animatable(0f) }
             val offsetY = remember { Animatable(0f) }
