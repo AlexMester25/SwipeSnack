@@ -45,12 +45,11 @@ class SnackSwipeController internal constructor(
         customAction: (@Composable (() -> Unit))? = null,
         dismissAction: (@Composable (() -> Unit))? = null,
         backgroundColor: Color = Color.DarkGray,
-        durationMillis: Long = 3000,
         shape: Shape = RoundedCornerShape(12.dp),
         elevation: Dp = 6.dp,
         innerPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
         outerPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-        behavior: SnackBehavior = SnackBehavior(durationMillis = durationMillis)
+        behavior: SnackBehavior = SnackBehavior()
     ) {
         hostState.show(
             SnackSwipeData(

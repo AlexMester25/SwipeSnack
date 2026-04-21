@@ -20,11 +20,11 @@ fun SnackSwipeBox(
     val hostState = rememberSnackSwipeHostState()
     val snackSwipeController = remember(hostState) { SnackSwipeController(hostState) }
 
-    Box(modifier = modifier) {
+    Box {
         content(snackSwipeController)
         SnackSwipeHost(
             hostState = hostState,
-            modifier = Modifier.align(Alignment.TopCenter)
+            modifier = modifier.align(Alignment.TopCenter)
         )
     }
 }
@@ -35,12 +35,11 @@ fun SnackSwipeController.showSnackSwipe(
     customAction: (@Composable () -> Unit)? = null,
     dismissAction: (@Composable (() -> Unit))? = null,
     backgroundColor: Color = Color.Black,
-    durationMillis: Long = 3000,
     shape: Shape = RoundedCornerShape(12.dp),
     elevation: Dp = 6.dp,
     innerPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
     outerPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-    behavior: SnackBehavior = SnackBehavior(durationMillis = durationMillis)
+    behavior: SnackBehavior = SnackBehavior()
 ) {
     show(
         messageText = messageText,
@@ -48,7 +47,6 @@ fun SnackSwipeController.showSnackSwipe(
         customAction = customAction,
         dismissAction = dismissAction,
         backgroundColor = backgroundColor,
-        durationMillis = durationMillis,
         shape = shape,
         elevation = elevation,
         innerPadding = innerPadding,

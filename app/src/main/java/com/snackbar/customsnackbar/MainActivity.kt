@@ -9,8 +9,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -39,7 +42,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CustomSnackBarTheme {
-                SnackSwipeBox { snackbarController ->
+                SnackSwipeBox(
+                    modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)
+                ) { snackbarController ->
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -53,9 +58,9 @@ class MainActivity : ComponentActivity() {
                             ),
                             onClick = {
                                 snackbarController.showSnackSwipe(
-                                    durationMillis = 2000,
                                     behavior = SnackBehavior(
-                                        policy = SnackPolicy.Replace
+                                        durationMillis = 1000,
+                                        policy = SnackPolicy.Enqueue
                                     ),
                                     messageText = {
                                         Text(
@@ -102,42 +107,6 @@ class MainActivity : ComponentActivity() {
                                 containerColor = Color(0xFF7B1F1F)
                             ),
                             onClick = {
-                                snackbarController.showSnackSwipe(
-                                    durationMillis = 3500,
-                                    backgroundColor = Color(0xFF7B1F1F),
-                                    behavior = SnackBehavior(
-                                        policy = SnackPolicy.Replace,
-                                        swipe = SwipeConfig(
-                                            allowedDirections = setOf(
-                                                SwipeDirection.Left,
-                                                SwipeDirection.Right
-                                            )
-                                        ),
-                                        animation = AnimationConfig()
-                                    ),
-                                    messageText = {
-                                        Text(
-                                            text = "Error snackbar (swipe only Left/Right)",
-                                            color = Color.White
-                                        )
-                                    },
-                                    icon = {
-                                        Icon(
-                                            Icons.Default.Info,
-                                            contentDescription = null,
-                                            tint = Color(0xFFFFC1C1)
-                                        )
-                                    },
-                                    dismissAction = {
-                                        IconButton(onClick = { snackbarController.close() }) {
-                                            Icon(
-                                                Icons.Default.Close,
-                                                contentDescription = null,
-                                                tint = Color.White
-                                            )
-                                        }
-                                    }
-                                )
                             }
                         ) {
                             Text(

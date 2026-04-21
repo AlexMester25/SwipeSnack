@@ -70,7 +70,7 @@ fun SnackSwipeHost(
 
     AnimatedVisibility(
         visible = visibleData != null,
-        enter = currentData?.behavior?.animation?.enter ?: EnterTransition.None,
+        enter = visibleData?.behavior?.animation?.enter ?: EnterTransition.None,
         exit = exitAnim,
         modifier = modifier.fillMaxWidth()
     ) {
