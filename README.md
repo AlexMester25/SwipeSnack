@@ -39,7 +39,7 @@ dependencyResolutionManagement {
  Add the dependency in `build.gradle.kts`
 ```kotlin
 dependencies {
-    implementation 'com.github.senseiiii12:SwipeSnack:0.3.1'
+    implementation 'com.github.senseiiii12:SwipeSnack:0.3.2'
 }
 ```
 ## 2. Usage
